@@ -20,7 +20,7 @@ No necesitas descargar nada. Abri \*\*PowerShell\*\* y ejecuta este comando para
 
 ```powershell
 
-irm \[https://raw.githubusercontent.com/stickyfran/searchandavif/main/install.ps1](https://raw.githubusercontent.com/stickyfran/searchandavif/main/install.ps1) | iex
+irm \[https://raw.githubusercontent.com/stickyfran/searchandavif/main/install.ps1](https://raw.githubusercontent.com/stickyfran/searchandavif/main/install.ps1) | iex```
 
 
 
