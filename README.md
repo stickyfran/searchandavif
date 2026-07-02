@@ -1,82 +1,55 @@
-# \# searchandavif
+# searchandavif
+Jpeg , png to AVIF Script for Linux systems
 
-# Jpeg , png to AVIF Script for Linux systems
+---
 
-# 
+## 🪟 Windows
 
-# \---
+### Instalación rápida en Windows
 
-# 
+No necesitas descargar nada. Abri **PowerShell** y ejecuta este comando para instalar automáticamente la herramienta y los códecs:
 
-# \## 🪟 Windows
+```powershell
+irm https://raw.githubusercontent.com/stickyfran/searchandavif/main/install.ps1 | iex
+```
 
-# 
+---
 
-# \### Instalación rápida en Windows
+## 🐧 Linux Requerimientos
 
-# 
+### Para convertir a AVIF (requiere libheif):
 
-# No necesitas descargar nada. Abri \*\*PowerShell\*\* y ejecuta este comando para instalar automáticamente la herramienta y los códecs:
+* **Arch Linux / CachyOS:**
+```bash
+sudo pacman -S libheif
+```
 
-# 
+* **Debian / Ubuntu:**
+```bash
+sudo apt install libheif-examples
+```
 
-# ```powershell
+### Para convertir a JPEG-XL (requiere libjxl):
 
-# irm \[https://raw.githubusercontent.com/stickyfran/searchandavif/main/install.ps1](https://raw.githubusercontent.com/stickyfran/searchandavif/main/install.ps1) | iex
+* **Arch Linux / CachyOS:**
+```bash
+sudo pacman -S libjxl
+```
 
-# ```
+* **Debian / Ubuntu:**
+```bash
+sudo apt install libjxl-tools
+```
 
-# 
+### Ejecución en Linux
 
-# \---
+```bash
+# Descargar el script
+wget https://raw.githubusercontent.com/stickyfran/searchandavif/main/searchandavif.sh
 
-# 
+# Darle permisos de ejecución
+chmod +x searchandavif.sh
 
-# \## 🐧 Linux Requerimientos
-
-# 
-
-# \### Para convertir a AVIF (requiere libheif):
-
-# 
-
-# \* \*\*Arch Linux / CachyOS:\*\* `sudo pacman -S libheif`
-
-# \* \*\*Debian / Ubuntu:\*\* `sudo apt install libheif-examples`
-
-# 
-
-# \### Para convertir a JPEG-XL (requiere libjxl):
-
-# 
-
-# \* \*\*Arch Linux / CachyOS:\*\* `sudo pacman -S libjxl`
-
-# \* \*\*Debian / Ubuntu:\*\* `sudo apt install libjxl-tools`
-
-# 
-
-# \### Ejecución en Linux
-
-# 
-
-# ```bash
-
-# \# Descargar el script
-
-# wget \[https://raw.githubusercontent.com/stickyfran/searchandavif/main/searchandavif.sh](https://raw.githubusercontent.com/stickyfran/searchandavif/main/searchandavif.sh)
-
-# 
-
-# \# Darle permisos de ejecución
-
-# chmod +x searchandavif.sh
-
-# 
-
-# \# Ejecutarlo
-
-# ./searchandavif.sh
-
-# ```
-
+# Ejecutarlo
+./searchandavif.sh
+```
