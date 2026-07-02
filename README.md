@@ -1,57 +1,82 @@
-# searchandavif
+# \# searchandavif
 
-Jpeg , png to AVIF Script for Linux systems
+# Jpeg , png to AVIF Script for Linux systems
 
+# 
 
+# \---
 
+# 
 
+# \## 🪟 Windows
 
-Windows:
+# 
 
+# \### Instalación rápida en Windows
 
+# 
 
-\## Instalación rápida en Windows
+# No necesitas descargar nada. Abri \*\*PowerShell\*\* y ejecuta este comando para instalar automáticamente la herramienta y los códecs:
 
+# 
 
+# ```powershell
 
-No necesitas descargar nada. Abri \*\*PowerShell\*\* y ejecuta este comando para instalar automáticamente la herramienta y los códecs:
+# irm \[https://raw.githubusercontent.com/stickyfran/searchandavif/main/install.ps1](https://raw.githubusercontent.com/stickyfran/searchandavif/main/install.ps1) | iex
 
+# ```
 
+# 
 
-```powershell
+# \---
 
-irm \[https://raw.githubusercontent.com/stickyfran/searchandavif/main/install.ps1](https://raw.githubusercontent.com/stickyfran/searchandavif/main/install.ps1) | iex```
+# 
 
+# \## 🐧 Linux Requerimientos
 
+# 
 
+# \### Para convertir a AVIF (requiere libheif):
 
+# 
 
-Linux Requerimientos:
+# \* \*\*Arch Linux / CachyOS:\*\* `sudo pacman -S libheif`
 
+# \* \*\*Debian / Ubuntu:\*\* `sudo apt install libheif-examples`
 
+# 
 
+# \### Para convertir a JPEG-XL (requiere libjxl):
 
+# 
 
-Para convertir a AVIF (requiere libheif):
+# \* \*\*Arch Linux / CachyOS:\*\* `sudo pacman -S libjxl`
 
+# \* \*\*Debian / Ubuntu:\*\* `sudo apt install libjxl-tools`
 
+# 
 
-Arch Linux / CachyOS: sudo pacman -S libheif
+# \### Ejecución en Linux
 
+# 
 
+# ```bash
 
-Debian / Ubuntu: sudo apt install libheif-examples
+# \# Descargar el script
 
+# wget \[https://raw.githubusercontent.com/stickyfran/searchandavif/main/searchandavif.sh](https://raw.githubusercontent.com/stickyfran/searchandavif/main/searchandavif.sh)
 
+# 
 
+# \# Darle permisos de ejecución
 
-Para convertir a JPEG-XL (requiere libjxl):
+# chmod +x searchandavif.sh
 
+# 
 
+# \# Ejecutarlo
 
-Arch Linux / CachyOS: sudo pacman -S libjxl
+# ./searchandavif.sh
 
-
-
-Debian / Ubuntu: sudo apt install libjxl-tools
+# ```
 
