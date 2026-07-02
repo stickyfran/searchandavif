@@ -33,11 +33,11 @@ sudo apt install libheif-examples libjxl-tools
 
 ```bash
 # Descargar el script
-wget https://raw.githubusercontent.com/stickyfran/searchandavif/main/searchandavif.sh
+wget https://raw.githubusercontent.com/stickyfran/searchandavif/main/AviferT3000.sh
 
 # Darle permisos de ejecución
-chmod +x searchandavif.sh
+chmod +x AviferT3000.sh
 
 # Ejecutarlo
-./searchandavif.sh
+./AviferT3000.sh
 ```
