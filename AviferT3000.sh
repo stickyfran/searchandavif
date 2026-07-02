@@ -1,56 +1,93 @@
 #!/bin/bash
 
-# Get the directory where the script is located. This is useful to run the script when u want to Search and converter (REMEMBER IT SEARCHS SUBDIRECTORYS RECURSIVELY)
-script_dir=$(dirname "$(readlink -f "$0")")
+# 1. MENÚ DE SELECCIÓN DE FORMATO
+echo "===================================="
+echo "Seleccione el formato de destino:"
+echo "[1] AVIF    (Usa heif-enc)"
+echo "[2] JPEG-XL (Usa cjxl)"
+echo "===================================="
+read -p "Ingrese 1 o 2: " opcion
 
-# Input directory relative to the script location.
+if [ "$opcion" == "2" ]; then
+    target_ext=".jxl"
+    target_exe="cjxl"
+    pkg_arch="libjxl"
+    pkg_deb="libjxl-tools"
+else
+    target_ext=".avif"
+    target_exe="heif-enc"
+    pkg_arch="libheif"
+    pkg_deb="libheif-examples"
+fi
+
+# 2. VERIFICACIÓN DE DEPENDENCIAS
+if ! command -v "$target_exe" &> /dev/null; then
+    echo "===================================="
+    echo "[ERROR] No se encontró el comando '$target_exe'."
+    echo "Necesitas instalar las dependencias antes de continuar."
+    echo ""
+    echo "Recomendaciones de instalación:"
+    echo " -> En Arch Linux / CachyOS: sudo pacman -S $pkg_arch"
+    echo " -> En Debian / Ubuntu:      sudo apt install $pkg_deb"
+    echo " -> En Fedora:               sudo dnf install $pkg_arch"
+    echo "===================================="
+    exit 1
+fi
+
+# 3. INICIALIZACIÓN
+script_dir=$(dirname "$(readlink -f "$0")")
 input_dir="$script_dir/"
 
-# Initialize counters
 total_converted=0
 total_skipped=0
 skipped_files_log="$script_dir/skipped_files.txt"
 
-# Ensure the log file is created or cleared
 > "$skipped_files_log"
 
-# Process all image files (jpg, jpeg, png, gif) in the input directory and subdirectories
-find "$input_dir" -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.gif" \) | while read -r file; do
-## U may add another file formats, but try to check compatiblity with heif-enc. (Webp and heic to avif not working for some reason right now)
-    # Get the directory path and filename
+echo ""
+echo "Buscando imágenes recursivamente en: $input_dir"
+
+# 4. PROCESO DE CONVERSIÓN RECURSIVA
+# Usamos < <(find ...) para evitar el problema del subshell y que los contadores funcionen
+while IFS= read -r file; do
     dir=$(dirname "$file")
     filename=$(basename -- "$file")
-    extension="${filename##*.}"
     filename_without_extension="${filename%.*}"
-
-    # Create output directory if it doesn't exist.
+    
     output_dir="$dir/"
-## output_dir="$dir/YouMayAddSubdirectory if u want to use it recursively"
     mkdir -p "$output_dir"
-
-    # Define output filename with .avif extension in the Output directory
-    output_filename="$output_dir/$filename_without_extension.avif"
-
-    # Attempt conversion
-    if heif-enc "$file" "$output_filename"; then
-        echo "Converted: $file -> $output_filename"
-        ((total_converted++))  # Increment converted file counter
-        # Delete original file after successful conversion. Comment this section if u need to preserve the original file.
+    
+    output_filename="$output_dir/$filename_without_extension$target_ext"
+    
+    echo ""
+    echo "Intentando convertir: $file"
+    
+    # Ejecutar la conversión
+    if "$target_exe" "$file" "$output_filename"; then
+        echo "Convertido: $file -> $output_filename"
+        ((total_converted++))
+        
+        # Eliminar archivo original
         rm "$file"
-        echo "Deleted original file: $file"
+        echo "Archivo original eliminado."
     else
-        echo "Conversion failed for file: $file"
-        ((total_skipped++))  # Increment skipped file counter
-        # Log skipped filename to the log file (optional)
-        # echo "$file" >> "$skipped_files_log"
+        echo "La conversión falló para el archivo: $file"
+        ((total_skipped++))
+        
+        # Registrar falla
+        echo "Falla de conversión: $file" >> "$skipped_files_log"
     fi
-done
+done < <(find "$input_dir" -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.gif" \))
 
-# Log the total number of skipped files to the log file. Not finished right now btw :p. Not working, dunno why
-echo "Total files skipped: $total_skipped" >> "$skipped_files_log"
+# Registrar el total de omitidos
+echo "" >> "$skipped_files_log"
+echo "Total archivos omitidos: $total_skipped" >> "$skipped_files_log"
 
-# Display summary message
-echo "Conversion summary:"
-echo "Total files converted: $total_converted"
-echo "Total files skipped: $total_skipped"
-echo "Skipped files logged in: $skipped_files_log"
+# Mostrar mensaje de resumen
+echo ""
+echo "===================================="
+echo "Resumen de conversión:"
+echo "Total archivos convertidos: $total_converted"
+echo "Total archivos omitidos: $total_skipped"
+echo "Archivos omitidos registrados en: $skipped_files_log"
+echo "===================================="
