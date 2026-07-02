@@ -10,15 +10,26 @@ Windows:
 
 
 
-1\. Abre \*\*PowerShell\*\* (puedes buscarlo en el menú de inicio).
-
-2\. Copia, pega y ejecuta el siguiente comando en una sola línea:
+\## Instalación rápida en Windows
 
 
 
-irm https://raw.githubusercontent.com/stickyfran/searchandavif/main/install.ps1 | iex
+No necesitas descargar nada. Abri \*\*PowerShell\*\* y ejecuta este comando para instalar automáticamente la herramienta y los códecs:
 
-Linux: Requerimientos si no estan ya en sistema
+
+
+```powershell
+
+irm \[https://raw.githubusercontent.com/stickyfran/searchandavif/main/install.ps1](https://raw.githubusercontent.com/stickyfran/searchandavif/main/install.ps1) | iex
+
+
+
+
+
+Linux Requerimientos:
+
+
+
 
 
 Para convertir a AVIF (requiere libheif):
@@ -30,6 +41,7 @@ Arch Linux / CachyOS: sudo pacman -S libheif
 
 
 Debian / Ubuntu: sudo apt install libheif-examples
+
 
 
 
