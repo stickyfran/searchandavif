@@ -16,7 +16,7 @@ irm https://raw.githubusercontent.com/stickyfran/searchandavif/main/install.ps1 
 Te va a "instalar" los codecs que van a quedar en tu carpeta de Docuementos y un .bat en la carpeta de Escritorio.
 Ese .bat lo pones en la carpeta que quieras y va a convertir esa carpeta y sus subdirectorios todas las imagenes a lo que elijas (JPEG-XL (lossless) o AVIF (muy eficiente ligero lossy))
 
----## 🐧 Linux
+## 🐧 Linux
 
 ### Para convertir a AVIF y JPEG-XL (requiere libheif y libjxl):
 
