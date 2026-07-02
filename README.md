@@ -3,7 +3,7 @@ Jpeg , png to AVIF Script for Linux systems
 
 ---
 
-## 🪟 Windows
+##  Windows
 
 ### Instalación rápida en Windows
 
@@ -15,30 +15,18 @@ irm https://raw.githubusercontent.com/stickyfran/searchandavif/main/install.ps1 
 
 ---
 
-## 🐧 Linux Requerimientos
+## 🐧 Linux
 
-### Para convertir a AVIF (requiere libheif):
+### Para convertir a AVIF y JPEG-XL (requiere libheif y libjxl):
 
 * **Arch Linux / CachyOS:**
 ```bash
-sudo pacman -S libheif
+sudo pacman -S libheif libjxl
 ```
 
 * **Debian / Ubuntu:**
 ```bash
-sudo apt install libheif-examples
-```
-
-### Para convertir a JPEG-XL (requiere libjxl):
-
-* **Arch Linux / CachyOS:**
-```bash
-sudo pacman -S libjxl
-```
-
-* **Debian / Ubuntu:**
-```bash
-sudo apt install libjxl-tools
+sudo apt install libheif-examples libjxl-tools
 ```
 
 ### Ejecución en Linux
