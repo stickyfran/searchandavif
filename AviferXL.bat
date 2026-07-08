@@ -7,7 +7,7 @@ if "%~1"==":Worker" goto Worker
 
 setlocal EnableDelayedExpansion
 
-:: 1. MENÚ DE SELECCIÓN DE FORMATO Y CONCURRENCIA
+:: 1. MENÚ DE SELECCIÓN DE FORMATO
 echo ====================================
 echo Seleccione el formato de destino:
 echo [1] AVIF    (Usa heif-enc.exe)
@@ -15,11 +15,6 @@ echo [2] JPEG-XL (Usa cjxl.exe)
 echo ====================================
 set /p opcion="Ingrese 1 o 2: "
 echo.
-
-echo ====================================
-set /p max_jobs="Ingrese cantidad de archivos simultaneos (ej: 4 u 8): "
-:: Validación: si está vacío, usar 4 por defecto
-if "!max_jobs!"=="" set max_jobs=4
 
 if "!opcion!"=="2" (
     set "target_ext=.jxl"
@@ -30,9 +25,23 @@ if "!opcion!"=="2" (
     set "target_exe=heif-enc.exe"
     echo Formato elegido: AVIF
 )
-echo Hilos simultaneos: !max_jobs!
 echo.
 
+:: 2. SELECCIÓN DE CONCURRENCIA CON TIMEOUT (10 SEGUNDOS)
+echo ====================================
+echo Cuantos archivos queres procesar al mismo tiempo?
+echo  - Podes elegir cualquier numero del 1 al 8.
+echo  - Si no tocas nada, en 10 segundos empezara con 2 hilos.
+echo ====================================
+:: El comando choice espera 10s (/T 10), por defecto elige 2 (/D 2) y solo acepta 12345678 (/C)
+choice /C 12345678 /T 10 /D 2 /N /M "Cantidad de hilos (1-8) [Por defecto 2]: "
+set max_jobs=!errorlevel!
+
+echo.
+echo Configurado correctamente a !max_jobs! hilo(s) simultaneo(s).
+echo.
+
+:: 3. INICIALIZACIÓN DE ENTORNO
 :: Obtener el directorio donde esta corriendo el script
 set "script_dir=%~dp0"
 set "input_dir=%script_dir%"
@@ -61,7 +70,7 @@ echo Buscando imagenes recursivamente en: %input_dir%
 echo Iniciando proceso multithread...
 echo.
 
-:: 2. PROCESO DE CONVERSIÓN RECURSIVA
+:: 4. PROCESO DE CONVERSIÓN RECURSIVA
 for /r "%input_dir%" %%F in (*.jpg *.jpeg *.png *.gif) do (
     
     set "file_dir=%%~dpF"
@@ -80,7 +89,7 @@ for /r "%input_dir%" %%F in (*.jpg *.jpeg *.png *.gif) do (
 
 echo.
 echo Esperando a que finalicen los ultimos procesos...
-:: 3. ESPERA FINAL
+:: 5. ESPERA FINAL
 :wait_final
 for /f %%A in ('tasklist /nh /fi "imagename eq !target_exe!" 2^>nul ^| find /c /i "!target_exe!"') do set active_jobs=%%A
 if !active_jobs! gtr 0 (
@@ -88,7 +97,7 @@ if !active_jobs! gtr 0 (
     goto wait_final
 )
 
-:: 4. CALCULAR RESULTADOS (Contando las líneas de los archivos)
+:: 6. CALCULAR RESULTADOS (Contando las líneas de los archivos)
 set total_converted=0
 for /f %%A in ('type "!success_log!" 2^>nul ^| find /c /v ""') do set total_converted=%%A
 
