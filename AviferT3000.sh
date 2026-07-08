@@ -1,12 +1,20 @@
 #!/bin/bash
 
-# 1. MENÚ DE SELECCIÓN DE FORMATO
+# 1. MENÚ DE SELECCIÓN DE FORMATO Y CONCURRENCIA
 echo "===================================="
 echo "Seleccione el formato de destino:"
 echo "[1] AVIF    (Usa heif-enc)"
 echo "[2] JPEG-XL (Usa cjxl)"
 echo "===================================="
 read -p "Ingrese 1 o 2: " opcion
+
+echo "===================================="
+read -p "Ingrese cantidad de archivos simultáneos (ej: 4 u 8): " max_jobs
+# Validación: si no ingresa nada o no es número, por defecto usamos 4
+if ! [[ "$max_jobs" =~ ^[0-9]+$ ]]; then
+    max_jobs=4
+    echo "Valor inválido o vacío. Usando $max_jobs hilos por defecto."
+fi
 
 if [ "$opcion" == "2" ]; then
     target_ext=".jxl"
@@ -38,56 +46,78 @@ fi
 script_dir=$(dirname "$(readlink -f "$0")")
 input_dir="$script_dir/"
 
-total_converted=0
-total_skipped=0
 skipped_files_log="$script_dir/skipped_files.txt"
-
 > "$skipped_files_log"
+
+# Archivo temporal para contar los éxitos de forma segura en multithreading
+success_log=$(mktemp)
 
 echo ""
 echo "Buscando imágenes recursivamente en: $input_dir"
+echo "Iniciando conversión de hasta $max_jobs archivos al mismo tiempo..."
+echo ""
 
-# 4. PROCESO DE CONVERSIÓN RECURSIVA
-# Usamos < <(find ...) para evitar el problema del subshell y que los contadores funcionen
-while IFS= read -r file; do
+# FUNCIÓN DE PROCESAMIENTO INDIVIDUAL
+process_file() {
+    local file="$1"
+    local dir
     dir=$(dirname "$file")
+    local filename
     filename=$(basename -- "$file")
-    filename_without_extension="${filename%.*}"
+    local filename_without_extension="${filename%.*}"
     
-    output_dir="$dir/"
-    mkdir -p "$output_dir"
+    local output_dir="$dir/"
+    local output_filename="$output_dir/$filename_without_extension$target_ext"
     
-    output_filename="$output_dir/$filename_without_extension$target_ext"
+    echo "⏳ [INICIO] Convirtiendo: $filename ..."
     
-    echo ""
-    echo "Intentando convertir: $file"
-    
-    # Ejecutar la conversión
-    if "$target_exe" "$file" "$output_filename"; then
-        echo "Convertido: $file -> $output_filename"
-        ((total_converted++))
+    # Ejecutar la conversión. Silenciamos la salida de la herramienta para no saturar la terminal.
+    if "$target_exe" "$file" "$output_filename" &> /dev/null; then
+        echo "✅ [ÉXITO] $filename -> $filename_without_extension$target_ext (Original eliminado)"
+        echo "1" >> "$success_log" # Registrar éxito sumando 1 al temporal
         
         # Eliminar archivo original
         rm "$file"
-        echo "Archivo original eliminado."
     else
-        echo "La conversión falló para el archivo: $file"
-        ((total_skipped++))
-        
-        # Registrar falla
+        echo "❌ [FALLA] No se pudo convertir: $filename"
         echo "Falla de conversión: $file" >> "$skipped_files_log"
     fi
+}
+
+# 4. PROCESO DE CONVERSIÓN RECURSIVA CON CONTROL DE TRABAJOS (JOBS)
+while IFS= read -r file; do
+    # Lanzar la tarea en segundo plano usando la función
+    process_file "$file" &
+    
+    # Si el número de procesos en segundo plano alcanza el máximo, esperamos a que liberen un espacio
+    while [ "$(jobs -r -p | wc -l)" -ge "$max_jobs" ]; do
+        wait -n 2>/dev/null || true
+    done
 done < <(find "$input_dir" -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.gif" \))
 
-# Registrar el total de omitidos
-echo "" >> "$skipped_files_log"
-echo "Total archivos omitidos: $total_skipped" >> "$skipped_files_log"
+# Esperar a que terminen los procesos en segundo plano restantes
+wait
+
+# 5. CÁLCULO DE TOTALES
+total_converted=$(wc -l < "$success_log")
+total_skipped=$(wc -l < "$skipped_files_log")
+
+# Limpieza del archivo temporal
+rm -f "$success_log"
+
+# Registrar el total de omitidos en el log si hubo errores
+if [ "$total_skipped" -gt 0 ]; then
+    echo "" >> "$skipped_files_log"
+    echo "Total archivos omitidos: $total_skipped" >> "$skipped_files_log"
+fi
 
 # Mostrar mensaje de resumen
 echo ""
 echo "===================================="
-echo "Resumen de conversión:"
+echo "Resumen de conversión ($max_jobs hilos simultáneos):"
 echo "Total archivos convertidos: $total_converted"
 echo "Total archivos omitidos: $total_skipped"
-echo "Archivos omitidos registrados en: $skipped_files_log"
+if [ "$total_skipped" -gt 0 ]; then
+    echo "Archivos omitidos registrados en: $skipped_files_log"
+fi
 echo "===================================="
