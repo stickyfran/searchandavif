@@ -10,20 +10,30 @@ setlocal EnableDelayedExpansion
 :: 1. MENÚ DE SELECCIÓN DE FORMATO
 echo ====================================
 echo Seleccione el formato de destino:
-echo [1] AVIF    (Usa heif-enc.exe)
-echo [2] JPEG-XL (Usa cjxl.exe)
+echo [1] AVIF                      (Usa heif-enc.exe)
+echo [2] JPEG-XL Lossless          (Usa cjxl.exe - Por defecto)
+echo [3] JPEG-XL Lossy (Equiv AVIF) (Usa cjxl.exe -d 2.5 --effort 7)
 echo ====================================
-set /p opcion="Ingrese 1 o 2: "
+:: El comando choice ahora acepta 1, 2 o 3. /D 2 por defecto si se agota el tiempo.
+choice /C 123 /T 10 /D 2 /N /M "Ingrese 1, 2 o 3: "
+set opcion=!errorlevel!
 echo.
 
-if "!opcion!"=="2" (
-    set "target_ext=.jxl"
-    set "target_exe=cjxl.exe"
-    echo Formato elegido: JPEG-XL
-) else (
+if "!opcion!"=="1" (
     set "target_ext=.avif"
     set "target_exe=heif-enc.exe"
+    set "jxl_mode=none"
     echo Formato elegido: AVIF
+) else if "!opcion!"=="3" (
+    set "target_ext=.jxl"
+    set "target_exe=cjxl.exe"
+    set "jxl_mode=lossy"
+    echo Formato elegido: JPEG-XL Lossy (Equivalente AVIF)
+) else (
+    set "target_ext=.jxl"
+    set "target_exe=cjxl.exe"
+    set "jxl_mode=lossless"
+    echo Formato elegido: JPEG-XL Lossless
 )
 echo.
 
@@ -31,9 +41,8 @@ echo.
 echo ====================================
 echo Cuantos archivos queres procesar al mismo tiempo?
 echo  - Podes elegir cualquier numero del 1 al 8.
-echo  - Si no tocas nada, en 10 segundos empezara con 2 hilos.
+echo  - Si no tocas nada, en 10 segundos empezará con 2 hilos.
 echo ====================================
-:: El comando choice espera 10s (/T 10), por defecto elige 2 (/D 2) y solo acepta 12345678 (/C)
 choice /C 12345678 /T 10 /D 2 /N /M "Cantidad de hilos (1-8) [Por defecto 2]: "
 set max_jobs=!errorlevel!
 
@@ -42,15 +51,12 @@ echo Configurado correctamente a !max_jobs! hilo(s) simultaneo(s).
 echo.
 
 :: 3. INICIALIZACIÓN DE ENTORNO
-:: Obtener el directorio donde esta corriendo el script
 set "script_dir=%~dp0"
 set "input_dir=%script_dir%"
 
-:: Ruta fija donde el comando de PowerShell instala los codecs
 set "codec_dir=%USERPROFILE%\Documents\codecs"
 set "encoder_cmd=!codec_dir!\!target_exe!"
 
-:: Verificar si el codificador elegido existe
 if not exist "!encoder_cmd!" (
     echo [ERROR] No se encontro '!target_exe!' en !codec_dir!.
     echo Por favor, asegurate de ejecutar primero el comando de instalacion.
@@ -58,11 +64,9 @@ if not exist "!encoder_cmd!" (
     exit /b
 )
 
-:: Inicializar logs y temporales
 set "skipped_files_log=%script_dir%skipped_files.txt"
 set "success_log=%TEMP%\success_log_%RANDOM%.txt"
 
-:: Crear o vaciar los archivos de registro
 type nul > "!skipped_files_log!"
 type nul > "!success_log!"
 
@@ -78,13 +82,12 @@ for /r "%input_dir%" %%F in (*.jpg *.jpeg *.png *.gif) do (
     
     set "output_filename=!file_dir!!filename_no_ext!!target_ext!"
     
-    :: Llamamos a la función que frena el loop si ya hay muchos procesos corriendo
     call :check_jobs
 
     echo [AGREGADO A COLA] "%%~nxF" ...
     
-    :: Lanzar el trabajador en segundo plano (/B) aislando el entorno con cmd /c
-    start "" /B cmd /c call "%~f0" :Worker "%%F" "!output_filename!" "!encoder_cmd!" "!success_log!" "!skipped_files_log!"
+    :: Lanzar el trabajador pasando el parámetro extra !jxl_mode!
+    start "" /B cmd /c call "%~f0" :Worker "%%F" "!output_filename!" "!encoder_cmd!" "!success_log!" "!skipped_files_log!" "!jxl_mode!"
 )
 
 echo.
@@ -97,17 +100,15 @@ if !active_jobs! gtr 0 (
     goto wait_final
 )
 
-:: 6. CALCULAR RESULTADOS (Contando las líneas de los archivos)
+:: 6. CALCULAR RESULTADOS
 set total_converted=0
 for /f %%A in ('type "!success_log!" 2^>nul ^| find /c /v ""') do set total_converted=%%A
 
 set total_skipped=0
 for /f %%A in ('type "!skipped_files_log!" 2^>nul ^| find /c /v ""') do set total_skipped=%%A
 
-:: Limpieza
 del "!success_log!" >nul 2>&1
 
-:: Mostrar mensaje de resumen
 echo.
 echo ====================================
 echo Resumen de conversion (!max_jobs! hilos):
@@ -122,8 +123,6 @@ exit /b
 
 :: =================================================================
 :: FUNCIÓN DE CONTROL DE CONCURRENCIA
-:: Cuenta cuántos procesos (ej: cjxl.exe) están corriendo. Si son igual o
-:: mayor al límite (!max_jobs!), pausa 1 segundo y vuelve a chequear.
 :: =================================================================
 :check_jobs
 for /f %%A in ('tasklist /nh /fi "imagename eq !target_exe!" 2^>nul ^| find /c /i "!target_exe!"') do set active_jobs=%%A
@@ -135,7 +134,6 @@ goto :eof
 
 :: =================================================================
 :: HILO TRABAJADOR (WORKER)
-:: Este bloque solo se ejecuta cuando el script se llama a sí mismo en 2do plano.
 :: =================================================================
 :Worker
 set "original_file=%~2"
@@ -143,17 +141,19 @@ set "output_filename=%~3"
 set "encoder_cmd=%~4"
 set "success_log=%~5"
 set "skipped_log=%~6"
+set "jxl_mode=%~7"
 
-:: Silenciamos la salida interna (>nul 2>&1) para no ensuciar la consola general
-"%encoder_cmd%" "%original_file%" "%output_filename%" >nul 2>&1
+:: Ejecución condicional en base al tipo de JXL configurado
+if "%jxl_mode%"=="lossy" (
+    "%encoder_cmd%" "%original_file%" "%output_filename%" -d 2.5 --effort 7 >nul 2>&1
+) else (
+    "%encoder_cmd%" "%original_file%" "%output_filename%" >nul 2>&1
+)
 
 if %errorlevel% equ 0 (
-    :: Anotamos 1 éxito en el temporal y borramos original
     echo 1>>"%success_log%"
     del "%original_file%"
 ) else (
-    :: Anotamos falla
     echo Falla de conversion: %original_file%>>"%skipped_log%"
 )
-:: Finaliza este sub-proceso cmd
 exit
